@@ -1,9 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Rembot.Core.Entities;
 
-[Table("Orders")]
 public class Order
 {
     [Key]
@@ -21,15 +19,28 @@ public class Order
     [Required]
     public decimal Cost { get; private set; }
 
-    [ForeignKey("User")]
     [Required]
-    public string UserId { get; private set; }
+    public string UserPhoneNumber { get; private set; }
 
     public User User { get; private set; }
+
+    public Order(string device,
+                string description,
+                decimal cost,
+                string userPhoneNumber)
+    {
+        Id = Guid.NewGuid().ToString();
+        Device = device;
+        Description = description;
+        Status = Status.Created;
+        Cost = cost;
+        UserPhoneNumber = userPhoneNumber;
+    }
 }
 
 public enum Status
 {
+    Created,
     InProccess,
     Done
 }

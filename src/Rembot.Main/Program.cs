@@ -1,27 +1,32 @@
-using Microsoft.EntityFrameworkCore;
+﻿using MediatR;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Rembot.Main.Configuration;
+using Rembot.Main.Services;
+using Telegram.Bot;
+using Rembot.Persistence.Configuration;
 
-var builder = WebApplication.CreateBuilder(args);
+IHost host = Host.CreateDefaultBuilder()
+    .ConfigureServices((context, services) =>
+    {
+        BotConfiguration configuration = new BotConfiguration();
+        context.Configuration.Bind("Bot", configuration);
 
-// Add services to the container.
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+        services.AddHttpClient<ITelegramBotClient>(httpClient =>
+        {
+            TelegramBotClientOptions options = new(configuration.Token);
+            new TelegramBotClient(options, httpClient);
+        });
+        services.AddDataContext(context.Configuration);
+        services.AddScoped<UpdateService>();
+        services.AddScoped<ReceiverService>();
+        services.AddHostedService<PollingService<ReceiverService>>();
+    })
+    .Build();
 
-var app = builder.Build();
+host.Services.EnsureDatabaseCreated();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+await host.RunAsync();
 
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
