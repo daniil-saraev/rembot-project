@@ -2,5 +2,5 @@ namespace Rembot.Core.Interfaces;
 
 public interface ICashbackService
 {
-    Task<decimal> CalculateCashback();
+    Task<decimal> CalculateCashback(string phoneNumber);
 }

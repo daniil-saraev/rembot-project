@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Rembot.Core.Entities;
 using Rembot.Core.Interfaces;
+using Rembot.Core.Models;
+using Rembot.Core.Exceptions;
 using Rembot.Persistence.Data;
+using Rembot.Core.Entities;
 
 namespace Rembot.Persistence.Services
 {
@@ -14,14 +16,35 @@ namespace Rembot.Persistence.Services
             _dataContext = dataContext;
         }
 
-        public Task<User> Login(long chatId, CancellationToken cancellationToken)
+        public async Task<UserDto> Login(long chatId, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var user = await _dataContext.Users.FirstAsync(x => x.ChatId == chatId, cancellationToken);
+            if (user != null)
+                return new UserDto()
+                {
+                    PhoneNumber = user.PhoneNumber,
+                    Name = user.Name
+                };
+            else 
+                throw new UserNotFoundException();
+
         }
 
-        public Task<User> Register(long chatId, string phoneNumber, CancellationToken cancellationToken)
+        public async Task<UserDto> Register(long chatId, string phoneNumber, string name, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            if(await _dataContext.Users.AnyAsync(x => x.ChatId == chatId, cancellationToken))
+                throw new UserAlreadyExistsException();
+            else
+            {
+                User user = new User(phoneNumber, chatId, name);
+                await _dataContext.Users.AddAsync(user, cancellationToken);
+                await _dataContext.SaveChangesAsync(cancellationToken);
+                return new UserDto()
+                {
+                    PhoneNumber = user.PhoneNumber,
+                    Name = user.Name
+                };
+            }
         }
     }
 }

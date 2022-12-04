@@ -1,12 +1,10 @@
-using Rembot.Core.Entities;
+using Rembot.Core.Models;
 
 namespace Rembot.Core.Interfaces;
 
 public interface IReferalService
 {
-    Task<string> GenerateLink();
+    Task<uint> CountReferals(string phoneNumber);
 
-    Task<uint> CountReferals();
-
-    Task AddReferal(User user);
+    Task AddReferal(string thisUserPhoneNumber, string linkOwnerPhoneNumber);
 }
