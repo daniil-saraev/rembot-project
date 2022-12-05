@@ -3,6 +3,7 @@ using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Rembot.Main.Services
 {
@@ -19,12 +20,12 @@ namespace Rembot.Main.Services
 
         public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
-            
             var endpoint = update.Type switch
             {
                 UpdateType.Message => OnMessageReceived(update.Message, cancellationToken),
                 UpdateType.EditedMessage => OnMessageReceived(update.Message, cancellationToken),
                 UpdateType.CallbackQuery => OnCallbackQueryReceived(update.CallbackQuery, cancellationToken),
+                UpdateType.InlineQuery => OnInlineQueryReceived(update.InlineQuery, cancellationToken),
                 UpdateType.ChosenInlineResult => OnChosenInlineResultReceived(update.ChosenInlineResult, cancellationToken),
                 _ => OnUnknownRequestReceived(update.Type, cancellationToken)
             };
@@ -48,7 +49,7 @@ namespace Rembot.Main.Services
             //}
 
             //await handler;
-            //await _botClient.SendTextMessageAsync
+            await _botClient.SendTextMessageAsync();
         }
 
         private async Task OnCallbackQueryReceived(CallbackQuery? callback, CancellationToken cancellationToken)
