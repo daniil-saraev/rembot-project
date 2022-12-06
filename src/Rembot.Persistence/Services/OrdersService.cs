@@ -19,13 +19,16 @@ namespace Rembot.Persistence.Services
             var user = await _dataContext.Users.FindAsync(phoneNumber);
             if (user == null)
                 throw new UserNotFoundException();
-            return user.Orders.Select(order => new OrderDto()
-            {
-                Cost = order.Cost,
-                Description = order.Description,
-                Device = order.Device,
-                Status = order.Status
-            });
+            if(user.Orders.Any())
+                return user.Orders.Select(order => new OrderDto()
+                {
+                    Cost = order.Cost,
+                    Description = order.Description,
+                    Device = order.Device,
+                    Status = order.Status
+                });
+            else
+                return new List<OrderDto>();
         }
     }
 }

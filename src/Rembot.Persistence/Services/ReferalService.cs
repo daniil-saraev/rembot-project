@@ -1,5 +1,6 @@
 ﻿using Rembot.Core.Exceptions;
 using Rembot.Core.Interfaces;
+using Rembot.Core.Models;
 using Rembot.Persistence.Data;
 
 namespace Rembot.Persistence.Services
@@ -13,23 +14,21 @@ namespace Rembot.Persistence.Services
             _dataContext = dataContext;
         }
 
-        public async Task AddReferal(string thisUserPhoneNumber, string linkOwnerPhoneNumber)
-        {
-            var user = await _dataContext.Users.FindAsync(thisUserPhoneNumber);
-            if (user == null) throw new UserNotFoundException();
-            var linkOwner = await _dataContext.Users.FindAsync(linkOwnerPhoneNumber);
-            if (linkOwner == null) throw new UserNotFoundException();
-
-            linkOwner.Referals.Add(user);
-            _dataContext.Users.Update(linkOwner);
-            await _dataContext.SaveChangesAsync();
-        }
-
         public async Task<uint> CountReferals(string phoneNumber)
         {
             var user = await _dataContext.Users.FindAsync(phoneNumber);
             if (user == null) throw new UserNotFoundException();
             return (uint)user.Referals.Count;
+        }
+
+        public async Task<IEnumerable<UserDto>> GetListOfReferals(string phoneNumber)
+        {
+            var user = await _dataContext.Users.FindAsync(phoneNumber);
+            if (user == null) throw new UserNotFoundException();
+            if(user.Referals.Any())
+                return user.Referals.Select(user => new UserDto { Name = user.Name, PhoneNumber = user.PhoneNumber} );
+            else
+                return new List<UserDto>();
         }
     }
 }

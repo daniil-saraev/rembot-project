@@ -6,5 +6,5 @@ public interface IReferalService
 {
     Task<uint> CountReferals(string phoneNumber);
 
-    Task AddReferal(string thisUserPhoneNumber, string linkOwnerPhoneNumber);
+    Task<IEnumerable<UserDto>> GetListOfReferals(string phoneNumber);
 }
