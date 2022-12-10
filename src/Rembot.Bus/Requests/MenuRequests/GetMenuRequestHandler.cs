@@ -1,10 +1,12 @@
 using MediatR;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
+using static Rembot.Bus.Buttons;
+using static Rembot.Bus.Responses;
 
 namespace Rembot.Bus;
 
-internal class GetMenuRequestHandler : IRequestHandler<GetMenuRequest>, IRequestHandler<GetContactsRequest>
+internal class GetMenuRequestHandler : IRequestHandler<GetNewMenuRequest>, IRequestHandler<GetEditedMenuRequest>,IRequestHandler<GetContactsRequest>
 {
     private readonly ITelegramBotClient _bot;
 
@@ -13,44 +15,57 @@ internal class GetMenuRequestHandler : IRequestHandler<GetMenuRequest>, IRequest
         _bot = bot;
     }
 
-    public async Task<Unit> Handle(GetMenuRequest request, CancellationToken cancellationToken)
+    public async Task<Unit> Handle(GetNewMenuRequest request, CancellationToken cancellationToken)
     {
-        InlineKeyboardMarkup inlineKeyboard = new(new[]
-        {
-            new []
-            {
-                InlineKeyboardButton.WithCallbackData("Заказы")
-            },
-            new []
-            {
-                InlineKeyboardButton.WithCallbackData("Бонусы и рефералы")
-            },
-            new []
-            {
-                InlineKeyboardButton.WithCallbackData("Контакты")
-            }
-        });
         await _bot.SendTextMessageAsync(
             chatId: request.ChatId,
-            text: "Меню",
-            replyMarkup: inlineKeyboard,
+            text: MENU,
+            replyMarkup: GetReplyMarkup(),
             cancellationToken: cancellationToken
         );
 
         return Unit.Value;
     }
 
+    public async Task<Unit> Handle(GetEditedMenuRequest request, CancellationToken cancellationToken)
+    {
+        await _bot.EditMessageTextAsync(
+            chatId: request.ChatId,
+            messageId: request.MessageId,
+            text: MENU,
+            replyMarkup: GetReplyMarkup(),
+            cancellationToken: cancellationToken
+        );
+
+        return Unit.Value;
+    }
+
+    private InlineKeyboardMarkup GetReplyMarkup()
+    {
+        return new InlineKeyboardMarkup(new[]
+        {
+            new []
+            {
+                InlineKeyboardButton.WithCallbackData(ORDERS)
+            },
+            new []
+            {
+                InlineKeyboardButton.WithCallbackData(BONUSES)
+            },
+            new []
+            {
+                InlineKeyboardButton.WithCallbackData(CONTACTS)
+            }
+        });
+    }
+
     public async Task<Unit> Handle(GetContactsRequest request, CancellationToken cancellationToken)
     {
-        string contactInfo = "Контакты: \n" +
-                "Тел: +79998887766 \n" +
-                "Почта: rembot@mail.ru" + 
-                "Адрес: Невский проспект, 100";
-
-        await _bot.SendTextMessageAsync(
+        await _bot.EditMessageTextAsync(
             chatId: request.ChatId,
-            text: contactInfo,
-            replyMarkup: new InlineKeyboardMarkup(InlineKeyboardButton.WithCallbackData("Меню")),
+            messageId: request.MessageId,
+            text: CONTACTS_INFO,
+            replyMarkup: new InlineKeyboardMarkup(InlineKeyboardButton.WithCallbackData(MENU)),
             cancellationToken: cancellationToken
         );
 

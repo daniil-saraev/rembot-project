@@ -2,6 +2,8 @@ using MediatR;
 using Rembot.Core.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
+using static Rembot.Bus.Buttons;
+using static Rembot.Bus.Responses;
 
 namespace Rembot.Bus;
 
@@ -27,10 +29,11 @@ internal class GetBonusesInfoRequestHandler : IRequestHandler<GetBonusesInfoRequ
         var discount = await _discountService.CalculateDiscount(request.PhoneNumber);
         var referalLink = $"{request.BotUrl}/?start={request.PhoneNumber}";
 
-        await _bot.SendTextMessageAsync(
+        await _bot.EditMessageTextAsync(
             chatId: request.ChatId,
+            messageId: request.MessageId,
             text: FormatBonuses(referalCount, cashback, discount, referalLink),
-            replyMarkup: new InlineKeyboardMarkup(new[] { InlineKeyboardButton.WithCallbackData("Список рефералов"), InlineKeyboardButton.WithCallbackData("Меню")} ),
+            replyMarkup: new InlineKeyboardMarkup(new[] { InlineKeyboardButton.WithCallbackData(REFERALS), InlineKeyboardButton.WithCallbackData(MENU)} ),
             cancellationToken: cancellationToken
         );
         return Unit.Value;
@@ -38,10 +41,10 @@ internal class GetBonusesInfoRequestHandler : IRequestHandler<GetBonusesInfoRequ
 
     private string FormatBonuses(uint referals, decimal cashback, decimal discount, string referalLink)
     {
-        return "Бонусы & Рефералы \n\n" +
-                $"Кэшбэк - {cashback} \n" +
-                $"Скидка - {discount*100}% \n" +
-                $"Количество рефералов - {referals} \n\n" +
-                $"Ваша реферальная ссылка - {referalLink}";
+        return $"{BONUSES} \n\n" +
+                $"{CASHBACK} - {cashback} \n" +
+                $"{DISCOUNT} - {discount*100}% \n" +
+                $"{REFERALS_COUNT} - {referals} \n\n" +
+                $"{REFERAL_LINK} - {referalLink}";
     }
 }

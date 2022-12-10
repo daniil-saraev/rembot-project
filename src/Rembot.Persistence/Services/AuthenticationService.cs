@@ -33,7 +33,7 @@ namespace Rembot.Persistence.Services
 
         public async Task<UserDto> Register(long chatId, string phoneNumber, string name)
         {
-            User user = await CreateUser(chatId, phoneNumber, name);
+            User user = await CreateUser(phoneNumber, name, chatId);
             return new UserDto()
             {
                 PhoneNumber = user.PhoneNumber,
@@ -43,12 +43,12 @@ namespace Rembot.Persistence.Services
 
         public async Task<UserDto> RegisterWithReferal(long chatId, string name, string userPhoneNumber, string linkOwnerPhoneNumber)
         {
-            User user = await CreateUser(chatId, userPhoneNumber, name);
-            var linkOwner = await _dataContext.Users.FindAsync(linkOwnerPhoneNumber);
-            if (linkOwner != null && !linkOwner.Referals.Contains(user))
+            User user = await CreateUser(userPhoneNumber, name, chatId);
+            User? linkOwner = await _dataContext.Users.FindAsync(linkOwnerPhoneNumber);
+            if (linkOwner != null)
             {                        
-                linkOwner.Referals.Add(user);
-                _dataContext.Users.Update(linkOwner);
+                Referal referal = new Referal(user.PhoneNumber, linkOwnerPhoneNumber);
+                _dataContext.Referals.Add(referal);
                 await _dataContext.SaveChangesAsync();
             }
             return new UserDto()
@@ -58,17 +58,14 @@ namespace Rembot.Persistence.Services
             };
         }
 
-        private async Task<User> CreateUser(long chatId, string phoneNumber, string name)
+        private async Task<User> CreateUser(string phoneNumber, string name, long chatId)
         {
             if(await _dataContext.Users.AnyAsync(x => x.ChatId == chatId))
                 throw new UserAlreadyExistsException();
-            else
-            {
-                User user = new User(phoneNumber, chatId, name);
-                await _dataContext.Users.AddAsync(user);
-                await _dataContext.SaveChangesAsync();
-                return user;
-            }            
-        }
+            User user = new User(phoneNumber, chatId, name);
+            _dataContext.Users.Add(user);
+            await _dataContext.SaveChangesAsync();
+            return user;
+        } 
     }
 }

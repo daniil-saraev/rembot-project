@@ -3,8 +3,9 @@ using Rembot.Core.Exceptions;
 using Rembot.Core.Interfaces;
 using Rembot.Core.Models;
 using Telegram.Bot;
-using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using static Rembot.Bus.Buttons;
+using static Rembot.Bus.Responses;
 
 namespace Rembot.Bus;
 
@@ -57,7 +58,7 @@ internal class AuthenticationRequestHandler : IRequestHandler<GetUserDataRequest
         }
         catch(UserAlreadyExistsException)
         {
-            await _bot.SendTextMessageAsync(request.ChatId, "Такой пользователь уже зарегистрирован.");
+            await _bot.SendTextMessageAsync(request.ChatId, USER_ALREADY_EXISTS);
         }
         return Unit.Value;
     }
@@ -71,7 +72,7 @@ internal class AuthenticationRequestHandler : IRequestHandler<GetUserDataRequest
         }
         catch(UserAlreadyExistsException)
         {
-            await _bot.SendTextMessageAsync(request.ChatId, "Такой пользователь уже зарегистрирован.");
+            await _bot.SendTextMessageAsync(request.ChatId, USER_ALREADY_EXISTS);
         }
         return Unit.Value;
     }
@@ -81,8 +82,7 @@ internal class AuthenticationRequestHandler : IRequestHandler<GetUserDataRequest
         await _bot.SendTextMessageAsync(
                 chatId: chatId,
                 text: $"{user.Name} \n" + $"{user.PhoneNumber}",
-                parseMode: ParseMode.MarkdownV2,
-                replyMarkup: null,
+                replyMarkup: (new ReplyKeyboardMarkup(new KeyboardButton(MENU)) {ResizeKeyboard = true}),
                 cancellationToken: cancellationToken
             );
     }
@@ -91,8 +91,8 @@ internal class AuthenticationRequestHandler : IRequestHandler<GetUserDataRequest
     {
         await _bot.SendTextMessageAsync(
                 chatId: chatId,
-                text: "Для регистрации необходим ваш номер телефона.",
-                replyMarkup: new ReplyKeyboardMarkup(KeyboardButton.WithRequestContact("Поделиться номером")){ResizeKeyboard = true},
+                text: PHONE_NUMBER_REQUIRED,
+                replyMarkup: new ReplyKeyboardMarkup(KeyboardButton.WithRequestContact(SHARE_NUMBER)){ResizeKeyboard = true},
                 cancellationToken: cancellationToken
             );
     }

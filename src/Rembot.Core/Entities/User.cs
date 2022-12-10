@@ -19,13 +19,11 @@ public class User
     [Required]
     public decimal Cashback { get; private set; }
 
-    public ICollection<Order> Orders { get; private set; }
-
-    public ICollection<User> Referals { get; private set; }
+    public ICollection<Order> Orders { get; private set; } = new List<Order>();
 
     public User(string phoneNumber,
                 long chatId,
-                string name)            
+                string name)           
     {
         PhoneNumber = phoneNumber;
         ChatId = chatId;

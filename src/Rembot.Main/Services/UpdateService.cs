@@ -7,19 +7,18 @@ using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using static Rembot.Bus.Buttons;
 
 namespace Rembot.Main.Services
 {
     internal class UpdateService : IUpdateHandler
     {
-        private readonly ITelegramBotClient _botClient;
         private readonly IMediator _mediator; 
         private readonly ILogger<UpdateService> _logger;
         private readonly BotConfiguration _configuration;
 
-        public UpdateService(ITelegramBotClient botClient, IMediator mediator, ILogger<UpdateService> logger, BotConfiguration configuration)
+        public UpdateService(IMediator mediator, ILogger<UpdateService> logger, BotConfiguration configuration)
         {
-            _botClient = botClient;
             _mediator = mediator;
             _logger = logger;
             _configuration = configuration;
@@ -31,7 +30,7 @@ namespace Rembot.Main.Services
             {
                 UpdateType.Message => OnMessageReceived(update.Message, cancellationToken),
                 UpdateType.EditedMessage => OnMessageReceived(update.Message, cancellationToken),
-                UpdateType.CallbackQuery => OnCallbackQueryReceived(update.CallbackQuery, cancellationToken),
+                UpdateType.CallbackQuery => OnCallbackQueryReceived(update.CallbackQuery, botClient, cancellationToken),
                 _ => OnUnknownRequestReceived(update.Type, cancellationToken)
             };
             await endpoint;
@@ -57,44 +56,50 @@ namespace Rembot.Main.Services
 
         private async Task OnTextMessageReceived(string text, long chatId)
         {
-            if(text.Contains("start"))
+            if(text.Contains(START))
             {
-                await _mediator.Send(new LoginRequest {ChatId = chatId});
-                    
+                string[] args = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if(args.Count() == 2)
+
+                await _mediator.Send(new GetPhoneNumberRequest {ChatId = chatId});
             }  
-            if(text.Contains("Меню"))
+            if(text.Contains(MENU))
             {
                 await _mediator.Send(new LoginRequest {ChatId = chatId});
-                await _mediator.Send(new GetMenuRequest {ChatId = chatId});
+                await _mediator.Send(new GetNewMenuRequest {ChatId = chatId});
             }
         }
 
         private async Task OnContactMessageReceived(Contact contact, long chatId)
         {
             await _mediator.Send(new RegisterRequest {ChatId = chatId, Name = contact.FirstName, PhoneNumber = contact.PhoneNumber});
-            await _mediator.Send(new GetMenuRequest {ChatId = chatId});
+            await _mediator.Send(new GetNewMenuRequest {ChatId = chatId});
         }
 
-        private async Task OnCallbackQueryReceived(CallbackQuery? callbackQuery, CancellationToken cancellationToken)
+        private async Task OnCallbackQueryReceived(CallbackQuery? callbackQuery, ITelegramBotClient bot, CancellationToken cancellationToken)
         {
             if(callbackQuery?.Message == null)
                 return;
-            await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id);
+            await bot.AnswerCallbackQueryAsync(callbackQuery.Id);
             UserDto user = await _mediator.Send(new GetUserDataRequest{ChatId = callbackQuery.Message.Chat.Id});
             long chatId = callbackQuery.Message.Chat.Id;
+            int messageId = callbackQuery.Message.MessageId;
             switch (callbackQuery.Data)
             {         
-                case "Меню" :      
-                    await _mediator.Send(new GetMenuRequest {ChatId = chatId});               
+                case MENU :      
+                    await _mediator.Send(new GetEditedMenuRequest {ChatId = chatId, MessageId = messageId});               
                     break;
-                case "Заказы" :
-                    await _mediator.Send(new GetOrdersRequest{ChatId = chatId, PhoneNumber = user.PhoneNumber});
+                case ORDERS :
+                    await _mediator.Send(new GetOrdersRequest{ChatId = chatId, MessageId = messageId, PhoneNumber = user.PhoneNumber});
                     break;
-                case "Бонусы и рефералы" :
-                    await _mediator.Send(new GetBonusesInfoRequest {BotUrl = _configuration.Url, ChatId = chatId, PhoneNumber = user.PhoneNumber});
+                case BONUSES :
+                    await _mediator.Send(new GetBonusesInfoRequest {BotUrl = _configuration.Url, ChatId = chatId, MessageId = messageId, PhoneNumber = user.PhoneNumber});
                     break;
-                case "Контакты" :
-                    await _mediator.Send(new GetContactsRequest {ChatId = chatId});
+                case CONTACTS :
+                    await _mediator.Send(new GetContactsRequest {ChatId = chatId, MessageId = messageId});
+                    break;
+                case REFERALS:
+                    await _mediator.Send(new GetReferalsRequest {ChatId = chatId, MessageId = messageId, PhoneNumber = user.PhoneNumber});
                     break;
                 default:
                     break;

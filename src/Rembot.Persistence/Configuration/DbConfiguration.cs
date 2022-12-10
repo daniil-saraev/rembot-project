@@ -20,6 +20,7 @@ namespace Rembot.Persistence.Configuration
             using (var scope = services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+                db.Database.EnsureDeleted();
                 db.Database.EnsureCreated();
             }
         }

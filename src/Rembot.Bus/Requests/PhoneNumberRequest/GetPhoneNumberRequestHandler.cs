@@ -1,6 +1,8 @@
 using MediatR;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
+using static Rembot.Bus.Buttons;
+using static Rembot.Bus.Responses;
 
 namespace Rembot.Bus;
 
@@ -17,8 +19,8 @@ internal class GetPhoneNumberRequestHandler : IRequestHandler<GetPhoneNumberRequ
     {
         await _bot.SendTextMessageAsync(
                 chatId: request.ChatId,
-                text: "Для регистрации необходим ваш номер телефона.",
-                replyMarkup: new ReplyKeyboardMarkup(KeyboardButton.WithRequestContact("Поделиться номером")){ResizeKeyboard = true},
+                text: PHONE_NUMBER_REQUIRED,
+                replyMarkup: new ReplyKeyboardMarkup(KeyboardButton.WithRequestContact(SHARE_NUMBER)){ResizeKeyboard = true},
                 cancellationToken: cancellationToken
             );
         return Unit.Value;
