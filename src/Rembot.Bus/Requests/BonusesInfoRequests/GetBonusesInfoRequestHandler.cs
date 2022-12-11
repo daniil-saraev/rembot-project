@@ -3,7 +3,7 @@ using Rembot.Core.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
 using static Rembot.Bus.Buttons;
-using static Rembot.Bus.Responses;
+using static Rembot.Bus.Items;
 
 namespace Rembot.Bus;
 
@@ -33,7 +33,12 @@ internal class GetBonusesInfoRequestHandler : IRequestHandler<GetBonusesInfoRequ
             chatId: request.ChatId,
             messageId: request.MessageId,
             text: FormatBonuses(referalCount, cashback, discount, referalLink),
-            replyMarkup: new InlineKeyboardMarkup(new[] { InlineKeyboardButton.WithCallbackData(REFERALS), InlineKeyboardButton.WithCallbackData(MENU)} ),
+            replyMarkup: new InlineKeyboardMarkup(new[] 
+            { 
+                new[] {
+                    InlineKeyboardButton.WithCallbackData(REFERALS)}, 
+                new [] {
+                    InlineKeyboardButton.WithCallbackData(MENU)}}),
             cancellationToken: cancellationToken
         );
         return Unit.Value;

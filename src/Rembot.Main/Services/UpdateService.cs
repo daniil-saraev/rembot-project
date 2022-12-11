@@ -1,39 +1,28 @@
-﻿using MediatR;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Rembot.Bus;
-using Rembot.Core.Models;
-using Rembot.Main.Configuration;
+using Rembot.Bus.Configuration;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using static Rembot.Bus.Buttons;
+
+#pragma warning disable CS8602
 
 namespace Rembot.Main.Services
 {
     internal class UpdateService : IUpdateHandler
     {
-        private readonly IMediator _mediator; 
+        private readonly IServiceProvider _services;
         private readonly ILogger<UpdateService> _logger;
         private readonly BotConfiguration _configuration;
+        private static readonly Dictionary<long, StateContext> _stateContextMap = new Dictionary<long, StateContext>();
 
-        public UpdateService(IMediator mediator, ILogger<UpdateService> logger, BotConfiguration configuration)
+        public UpdateService(IServiceProvider services, ILogger<UpdateService> logger, BotConfiguration configuration)
         {
-            _mediator = mediator;
+            _services = services;
             _logger = logger;
             _configuration = configuration;
-        }
-
-        public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-        {
-            var endpoint = update.Type switch
-            {
-                UpdateType.Message => OnMessageReceived(update.Message, cancellationToken),
-                UpdateType.EditedMessage => OnMessageReceived(update.Message, cancellationToken),
-                UpdateType.CallbackQuery => OnCallbackQueryReceived(update.CallbackQuery, botClient, cancellationToken),
-                _ => OnUnknownRequestReceived(update.Type, cancellationToken)
-            };
-            await endpoint;
         }
 
         public async Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
@@ -42,74 +31,63 @@ namespace Rembot.Main.Services
             await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
         }
 
-        private async Task OnMessageReceived(Message? message, CancellationToken cancellationToken)
+        public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
-            if (!string.IsNullOrEmpty(message?.Text))
+            long userId = GetUserId(update);
+            StateContext context = GetUserStateContext(userId);
+            var endpoint = context.State switch
             {
-                await OnTextMessageReceived(message.Text, message.Chat.Id);
-            }          
-            else if(message?.Contact != null)
+                State.Authentication => HandleAuthenticationState(context, update, cancellationToken),
+                State.Menu => HandleMenuState(context, update, cancellationToken),
+                State.PlacingOrder => HandlePlacingOrderState(context, update, cancellationToken),
+                _ => throw new Exception($"Unknown state: {context.State}")
+            };
+            await endpoint;
+        }
+
+        private async Task HandleAuthenticationState(StateContext context, Update update, CancellationToken cancellationToken)
+        {
+            var stateHandler = _services.GetRequiredService<AuthenticationStateHandler>();
+            await stateHandler.HandleUpdateAsync(context, update, cancellationToken);
+        }
+
+        private async Task HandleMenuState(StateContext context, Update update, CancellationToken cancellationToken)
+        {
+            var stateHandler = _services.GetRequiredService<MenuStateHandler>();
+            await stateHandler.HandleUpdateAsync(context, update, cancellationToken);
+        }
+
+        private async Task HandlePlacingOrderState(StateContext context, Update update, CancellationToken cancellationToken)
+        {
+            var stateHandler = _services.GetRequiredService<PlacingOrderStateHandler>();
+            await stateHandler.HandleUpdateAsync(context, update, cancellationToken);
+        }
+
+        private long GetUserId(Update update)
+        {
+            return update.Type switch
             {
-                await OnContactMessageReceived(message.Contact, message.Chat.Id);
+                UpdateType.Message => update.Message.From.Id,
+                UpdateType.CallbackQuery => update.CallbackQuery.From.Id,
+                UpdateType.EditedMessage => update.EditedMessage.From.Id,
+                UpdateType.ChosenInlineResult => update.ChosenInlineResult.From.Id,
+                UpdateType.InlineQuery => update.InlineQuery.From.Id,
+                _ => throw new Exception($"Unexpected update type: {update.Type}")
+            };
+        }
+
+        private StateContext GetUserStateContext(long userId)
+        {
+            if(_stateContextMap.ContainsKey(userId))
+                return _stateContextMap[userId]; 
+            else
+            {
+                StateContext context = new StateContext();
+                _stateContextMap.Add(userId, context);
+                return context;
             }
-        }
-
-        private async Task OnTextMessageReceived(string text, long chatId)
-        {
-            if(text.Contains(START))
-            {
-                string[] args = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if(args.Count() == 2)
-
-                await _mediator.Send(new GetPhoneNumberRequest {ChatId = chatId});
-            }  
-            if(text.Contains(MENU))
-            {
-                await _mediator.Send(new LoginRequest {ChatId = chatId});
-                await _mediator.Send(new GetNewMenuRequest {ChatId = chatId});
-            }
-        }
-
-        private async Task OnContactMessageReceived(Contact contact, long chatId)
-        {
-            await _mediator.Send(new RegisterRequest {ChatId = chatId, Name = contact.FirstName, PhoneNumber = contact.PhoneNumber});
-            await _mediator.Send(new GetNewMenuRequest {ChatId = chatId});
-        }
-
-        private async Task OnCallbackQueryReceived(CallbackQuery? callbackQuery, ITelegramBotClient bot, CancellationToken cancellationToken)
-        {
-            if(callbackQuery?.Message == null)
-                return;
-            await bot.AnswerCallbackQueryAsync(callbackQuery.Id);
-            UserDto user = await _mediator.Send(new GetUserDataRequest{ChatId = callbackQuery.Message.Chat.Id});
-            long chatId = callbackQuery.Message.Chat.Id;
-            int messageId = callbackQuery.Message.MessageId;
-            switch (callbackQuery.Data)
-            {         
-                case MENU :      
-                    await _mediator.Send(new GetEditedMenuRequest {ChatId = chatId, MessageId = messageId});               
-                    break;
-                case ORDERS :
-                    await _mediator.Send(new GetOrdersRequest{ChatId = chatId, MessageId = messageId, PhoneNumber = user.PhoneNumber});
-                    break;
-                case BONUSES :
-                    await _mediator.Send(new GetBonusesInfoRequest {BotUrl = _configuration.Url, ChatId = chatId, MessageId = messageId, PhoneNumber = user.PhoneNumber});
-                    break;
-                case CONTACTS :
-                    await _mediator.Send(new GetContactsRequest {ChatId = chatId, MessageId = messageId});
-                    break;
-                case REFERALS:
-                    await _mediator.Send(new GetReferalsRequest {ChatId = chatId, MessageId = messageId, PhoneNumber = user.PhoneNumber});
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        private Task OnUnknownRequestReceived(UpdateType updateType, CancellationToken cancellationToken)
-        {
-            _logger.LogWarning("Unknown request received", updateType);
-            return Task.CompletedTask;
         }
     }
 }
+
+#pragma warning restore CS8602

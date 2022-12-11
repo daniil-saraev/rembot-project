@@ -3,6 +3,7 @@ using Rembot.Core.Interfaces;
 using Rembot.Core.Models;
 using Rembot.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
+using Rembot.Core.Entities;
 
 namespace Rembot.Persistence.Services
 {
@@ -30,6 +31,16 @@ namespace Rembot.Persistence.Services
                 });
             else
                 return new List<OrderDto>();
+        }
+
+        public async Task PlaceOrder(string device, string description, string phoneNumber)
+        {
+            var user = await _dataContext.Users.FindAsync(phoneNumber);
+            if (user == null)
+                throw new UserNotFoundException();
+            Order order = new Order(device, description, decimal.Zero, phoneNumber);
+            _dataContext.Orders.Add(order);
+            await _dataContext.SaveChangesAsync();
         }
     }
 }

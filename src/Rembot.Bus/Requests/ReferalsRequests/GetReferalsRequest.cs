@@ -2,7 +2,7 @@ using MediatR;
 
 namespace Rembot.Bus;
 
-public struct GetReferalsRequest : IRequest
+internal struct GetReferalsRequest : IRequest
 {
     public long ChatId { get; set; }
     public int MessageId { get; set; }

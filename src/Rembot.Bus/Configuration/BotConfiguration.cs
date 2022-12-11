@@ -1,4 +1,4 @@
-namespace Rembot.Main.Configuration;
+namespace Rembot.Bus.Configuration;
 
 public class BotConfiguration
 {

@@ -8,16 +8,16 @@ public class Order
     public string Id { get; private set; }
 
     [Required]
-    public string Device { get; private set; }
+    public string Device { get; set; }
 
     [Required]
-    public string Description { get; private set; }
+    public string Description { get; set; }
 
     [Required]
-    public Status Status { get; private set; }
+    public Status Status { get; set; }
 
     [Required]
-    public decimal Cost { get; private set; }
+    public decimal Cost { get; set; }
 
     [Required]
     public string UserPhoneNumber { get; private set; }

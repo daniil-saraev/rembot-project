@@ -2,11 +2,10 @@ using MediatR;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
 using static Rembot.Bus.Buttons;
-using static Rembot.Bus.Responses;
 
 namespace Rembot.Bus;
 
-internal class GetMenuRequestHandler : IRequestHandler<GetNewMenuRequest>, IRequestHandler<GetEditedMenuRequest>,IRequestHandler<GetContactsRequest>
+internal class GetMenuRequestHandler : IRequestHandler<GetNewMenuRequest>, IRequestHandler<GetEditedMenuRequest>
 {
     private readonly ITelegramBotClient _bot;
 
@@ -57,19 +56,6 @@ internal class GetMenuRequestHandler : IRequestHandler<GetNewMenuRequest>, IRequ
                 InlineKeyboardButton.WithCallbackData(CONTACTS)
             }
         });
-    }
-
-    public async Task<Unit> Handle(GetContactsRequest request, CancellationToken cancellationToken)
-    {
-        await _bot.EditMessageTextAsync(
-            chatId: request.ChatId,
-            messageId: request.MessageId,
-            text: CONTACTS_INFO,
-            replyMarkup: new InlineKeyboardMarkup(InlineKeyboardButton.WithCallbackData(MENU)),
-            cancellationToken: cancellationToken
-        );
-
-        return Unit.Value;
     }
 }
 

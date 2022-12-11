@@ -10,9 +10,8 @@ using static Rembot.Bus.Responses;
 namespace Rembot.Bus;
 
 internal class AuthenticationRequestHandler : IRequestHandler<GetUserDataRequest, UserDto>,
-                                            IRequestHandler<LoginRequest>, 
-                                            IRequestHandler<RegisterRequest>, 
-                                            IRequestHandler<RegisterWithReferalRequest>
+                                            IRequestHandler<RegisterRequest, UserDto>, 
+                                            IRequestHandler<RegisterWithReferalRequest, UserDto>
 {
     private readonly IAuthenticationService _authenticationService;
     private readonly ITelegramBotClient _bot;
@@ -27,7 +26,9 @@ internal class AuthenticationRequestHandler : IRequestHandler<GetUserDataRequest
     {
         try
         {
-            return await _authenticationService.Login(request.ChatId);
+            var user = await _authenticationService.Login(request.ChatId);
+            await SendUserInfo(user, request.ChatId, cancellationToken);
+            return user;
         }
         catch (UserNotFoundException)
         {
@@ -35,46 +36,32 @@ internal class AuthenticationRequestHandler : IRequestHandler<GetUserDataRequest
         }
     }
 
-    public async Task<Unit> Handle(LoginRequest request, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var user = await _authenticationService.Login(request.ChatId);
-            await SendUserInfo(user, request.ChatId, cancellationToken);
-        }
-        catch (UserNotFoundException)
-        {
-            await SendPhoneNumberRequest(request.ChatId, cancellationToken);
-        }
-        return Unit.Value;
-    }
-
-    public async Task<Unit> Handle(RegisterRequest request, CancellationToken cancellationToken)
+    public async Task<UserDto> Handle(RegisterRequest request, CancellationToken cancellationToken)
     {
         try
         {
             var user = await _authenticationService.Register(request.ChatId, request.PhoneNumber, request.Name);
             await SendUserInfo(user, request.ChatId, cancellationToken);
+            return user;
         }
         catch(UserAlreadyExistsException)
         {
-            await _bot.SendTextMessageAsync(request.ChatId, USER_ALREADY_EXISTS);
+            throw;
         }
-        return Unit.Value;
     }
 
-    public async Task<Unit> Handle(RegisterWithReferalRequest request, CancellationToken cancellationToken)
+    public async Task<UserDto> Handle(RegisterWithReferalRequest request, CancellationToken cancellationToken)
     {
         try
         {
             var user = await _authenticationService.RegisterWithReferal(request.ChatId, request.Name, request.UserPhoneNumber, request.LinkOwnerPhoneNumber);
             await SendUserInfo(user, request.ChatId, cancellationToken);
+            return user;
         }
         catch(UserAlreadyExistsException)
         {
-            await _bot.SendTextMessageAsync(request.ChatId, USER_ALREADY_EXISTS);
+            throw;
         }
-        return Unit.Value;
     }
 
     private async Task SendUserInfo(UserDto user, long chatId, CancellationToken cancellationToken)

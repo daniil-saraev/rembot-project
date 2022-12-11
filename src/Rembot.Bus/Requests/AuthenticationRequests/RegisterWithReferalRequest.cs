@@ -3,7 +3,7 @@ using Rembot.Core.Models;
 
 namespace Rembot.Bus;
 
-public struct RegisterWithReferalRequest : IRequest
+internal struct RegisterWithReferalRequest : IRequest<UserDto>
 {
     public long ChatId { get; set; }
     public string Name { get; set; }

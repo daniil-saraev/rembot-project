@@ -1,12 +1,10 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Rembot.Main.Configuration;
+using Rembot.Bus.Configuration;
 using Rembot.Main.Services;
 using Telegram.Bot;
 using Rembot.Persistence.Configuration;
-using MediatR;
-using Rembot.Bus;
 using Telegram.Bot.Polling;
 
 IHost host = Host.CreateDefaultBuilder()
@@ -18,7 +16,7 @@ IHost host = Host.CreateDefaultBuilder()
         services.AddSingleton<ITelegramBotClient>(new TelegramBotClient(configuration.Token, new HttpClient()));
         services.AddDataContext(context.Configuration);
         services.AddCoreServices();
-        services.AddMediatR(typeof(LoginRequest).Assembly);
+        services.AddBusServices();
         services.AddScoped<IUpdateHandler, UpdateService>();
         services.AddScoped<IUpdateReceiver, ReceiverService>();
         services.AddHostedService<PollingService<IUpdateReceiver>>();
