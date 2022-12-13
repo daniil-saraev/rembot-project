@@ -14,6 +14,7 @@ public class PlacingOrderStateHandler : StateHandler
     public PlacingOrderStateHandler(ITelegramBotClient bot, IMediator mediator, ILogger<PlacingOrderStateHandler> logger) : base(bot, mediator, logger)
     {
         _state = InnerState.GettingDevice;
+        ResetState += OnResetState;
     }
 
     public override async Task HandleUpdateAsync(StateContext context, Update update, CancellationToken cancellationToken)
@@ -59,6 +60,11 @@ public class PlacingOrderStateHandler : StateHandler
         _request.PhoneNumber = context.User.PhoneNumber;
         await _mediator.Send(_request, cancellationToken);
         _state = InnerState.OrderPlaced;
+    }
+
+    private void OnResetState()
+    {
+        _state = InnerState.GettingDevice;
     }
 
     private enum InnerState

@@ -1,5 +1,4 @@
 ﻿using Rembot.Core.Entities;
-using System.ComponentModel.DataAnnotations;
 
 namespace Rembot.Core.Models
 {

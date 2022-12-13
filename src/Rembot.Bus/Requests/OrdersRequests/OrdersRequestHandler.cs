@@ -1,5 +1,6 @@
 using System.Text;
 using MediatR;
+using Rembot.Core.Entities;
 using Rembot.Core.Interfaces;
 using Rembot.Core.Models;
 using Telegram.Bot;
@@ -85,10 +86,16 @@ internal class OrdersRequestHandler : IRequestHandler<GetOrdersRequest>, IReques
         else
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append(String.Format("{0,15} {1,15} {2,15}\n\n", DEVICE, DESCRIPTION, STATUS));
+            builder.Append(String.Format("{0,-30} {1,-30} {2,-30}\n\n", DEVICE, DESCRIPTION, STATUS));
             foreach (var order in orders)
             {
-                builder.Append(String.Format("{0,15} {1,15} {2,15}\n", order.Device, order.Description, order.Status));
+                string status = order.Status switch
+                {
+                    Status.Created => "Создан",
+                    Status.InProccess => "В работе",
+                    Status.Done => "Готов"
+                };
+                builder.Append(String.Format("{0,-30} {1,-30} {2,-30}\n", order.Device, order.Description, status));
             }
             return builder.ToString();
         }

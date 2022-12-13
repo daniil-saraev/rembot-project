@@ -16,6 +16,7 @@ public class AuthenticationStateHandler : StateHandler
     public AuthenticationStateHandler(ITelegramBotClient bot, IMediator mediator, ILogger<AuthenticationStateHandler> logger) : base(bot, mediator, logger)
     {
         _state = InnerState.SigningIn;
+        ResetState += OnResetState;
     }
 
     public override async Task HandleUpdateAsync(StateContext context, Update update, CancellationToken cancellationToken)
@@ -100,6 +101,12 @@ public class AuthenticationStateHandler : StateHandler
         await _mediator.Send(new GetNewMenuRequest {ChatId = chatId}, cancellationToken);     
         context.User = user;
         context.State = State.Menu;     
+        _state = InnerState.SigningIn;
+    }
+
+    private void OnResetState()
+    {
+        _state = InnerState.SigningIn;
     }
 
     private enum InnerState

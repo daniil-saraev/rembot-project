@@ -29,8 +29,8 @@ public static class Responses
 
 public static class Items
 {
-    public const string DEVICE = "📟 Устройство";
-    public const string DESCRIPTION = "📜 Описание";
+    public const string DEVICE = "💻 Устройство";
+    public const string DESCRIPTION = "🤒 Проблема";
     public const string STATUS = "⚙️ Статус";
     public const string CASHBACK = "💰 Кэшбэк";
     public const string DISCOUNT = "➗ Скидка";

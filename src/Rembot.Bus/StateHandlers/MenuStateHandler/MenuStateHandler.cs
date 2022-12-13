@@ -17,6 +17,7 @@ public class MenuStateHandler : StateHandler
     {
         _configuration = configuration;
         _state = InnerState.MainMenu;
+        ResetState += OnResetState;
     }
 
     public override async Task HandleUpdateAsync(StateContext context, Update update, CancellationToken cancellationToken)
@@ -126,6 +127,11 @@ public class MenuStateHandler : StateHandler
     private async Task ReturnToMenu(int messageId, long chatId, StateContext context, CancellationToken cancellationToken)
     {
         await _mediator.Send(new GetEditedMenuRequest {ChatId = chatId, MessageId = messageId}, cancellationToken);
+        _state = InnerState.MainMenu;
+    }
+
+    private void OnResetState()
+    {
         _state = InnerState.MainMenu;
     }
 

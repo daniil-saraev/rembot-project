@@ -14,6 +14,8 @@ public abstract class StateHandler
     protected readonly ILogger<StateHandler> _logger;
     protected readonly Dictionary<string, string> _data;
 
+    protected static event Action? ResetState;
+
     public StateHandler(ITelegramBotClient bot, IMediator mediator, ILogger<StateHandler> logger)
     {
         _bot = bot;
@@ -26,7 +28,7 @@ public abstract class StateHandler
 
     protected Task OnUnknownRequestReceived(UpdateType updateType, CancellationToken cancellationToken)
     {
-        _logger.LogWarning("Unknown request received", updateType);
+        _logger.LogWarning($"Unknown request received {updateType}");
         return Task.CompletedTask;
     }
 
@@ -39,6 +41,7 @@ public abstract class StateHandler
                 await _mediator.Send(new GetNewMenuRequest {ChatId = message.Chat.Id});
                 context.User = user;
                 context.State = State.Menu;
+                ResetState?.Invoke();
                 break;
         }    
     }
