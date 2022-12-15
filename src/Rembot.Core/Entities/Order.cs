@@ -22,7 +22,7 @@ public class Order
     [Required]
     public string UserPhoneNumber { get; private set; }
 
-    public User User { get; private set; }
+    public User User { get; private set; } = null!;
 
     public Order(string device,
                 string description,

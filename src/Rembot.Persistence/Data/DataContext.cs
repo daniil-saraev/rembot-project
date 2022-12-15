@@ -1,5 +1,7 @@
 using Rembot.Core.Entities;
 using Microsoft.EntityFrameworkCore;
+using Rembot.StateMachines.Users;
+using Rembot.StateMachines.Orders;
 
 namespace Rembot.Persistence.Data;
 
@@ -22,15 +24,27 @@ public class DataContext : DbContext
                                     .WithOne(order => order.User)
                                     .HasForeignKey(order => order.UserPhoneNumber)
                                     .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<UserState>().HasOne<User>(state => state.User)
+                                        .WithOne()
+                                        .HasForeignKey<User>(user => user.PhoneNumber);
+
         modelBuilder.Entity<Order>().Property(order => order.Cost)
                                     .HasPrecision(8, 2)
                                     .HasColumnType("DECIMAL(8,2)");
+        modelBuilder.Entity<OrderState>().HasOne<Order>(state => state.Order)
+                                        .WithOne()
+                                        .HasForeignKey<Order>(order => order.Id);
+
         modelBuilder.Entity<Referal>().HasKey(referal => referal.GuestPhoneNumber);
     }
 
     public DbSet<User> Users { get; set; }
 
+    public DbSet<UserState> UserStates { get; set; }
+
     public DbSet<Order> Orders { get; set; }
+
+    public DbSet<OrderState> OrderStates { get; set; }
 
     public DbSet<Referal> Referals { get; set; }
 }

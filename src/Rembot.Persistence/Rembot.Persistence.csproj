@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Rembot.Core\Rembot.Core.csproj" />
+    <ProjectReference Include="..\Rembot.StateMachines\Rembot.StateMachines.csproj" />
   </ItemGroup>
 
 </Project>
