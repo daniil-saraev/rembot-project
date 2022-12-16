@@ -9,7 +9,7 @@ namespace Rembot.Persistence.Configuration
     {
         public static void AddDataContext(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddDbContext<DataContext>(options =>
+            services.AddDbContext<DbContext, DataContext>(options =>
             {
                 options.UseSqlite(configuration.GetConnectionString("Db"));
             });

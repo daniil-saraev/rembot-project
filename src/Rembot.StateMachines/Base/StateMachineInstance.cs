@@ -9,4 +9,6 @@ public abstract class StateMachineInstance : SagaStateMachineInstance
     public Guid CorrelationId { get; set; }
 
     public string CurrentState { get; set; } = null!;
+
+    public byte[] RowVersion { get; set; }
 }

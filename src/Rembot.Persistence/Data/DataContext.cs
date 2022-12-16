@@ -2,10 +2,13 @@ using Rembot.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Rembot.StateMachines.Users;
 using Rembot.StateMachines.Orders;
+using MassTransit.EntityFrameworkCoreIntegration;
+using MassTransit;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Rembot.Persistence.Data;
 
-public class DataContext : DbContext
+internal class DataContext : SagaDbContext
 {
     public DataContext(DbContextOptions options) : base(options)
     {
@@ -14,28 +17,33 @@ public class DataContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<User>().HasKey(user => user.PhoneNumber);
+        
         modelBuilder.Entity<User>().Property(user => user.Discount)
                                     .HasPrecision(3, 2)
                                     .HasColumnType("DECIMAL(3,2)");
+
         modelBuilder.Entity<User>().Property(user => user.Cashback)
                                     .HasPrecision(8, 2)
                                     .HasColumnType("DECIMAL(8,2)");
+
         modelBuilder.Entity<User>().HasMany<Order>(user => user.Orders)
                                     .WithOne(order => order.User)
                                     .HasForeignKey(order => order.UserPhoneNumber)
                                     .OnDelete(DeleteBehavior.Cascade);
-        modelBuilder.Entity<UserState>().HasOne<User>(state => state.User)
-                                        .WithOne()
-                                        .HasForeignKey<User>(user => user.PhoneNumber);
+
+        modelBuilder.Entity<User>().HasOne<UserState>()
+                                    .WithOne(state => state.User)
+                                    .HasForeignKey<UserState>(state => state.UserPhoneNumber)
+                                    .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Order>().Property(order => order.Cost)
                                     .HasPrecision(8, 2)
                                     .HasColumnType("DECIMAL(8,2)");
-        modelBuilder.Entity<OrderState>().HasOne<Order>(state => state.Order)
-                                        .WithOne()
-                                        .HasForeignKey<Order>(order => order.Id);
 
-        modelBuilder.Entity<Referal>().HasKey(referal => referal.GuestPhoneNumber);
+        modelBuilder.Entity<Order>().HasOne<OrderState>()
+                                    .WithOne(state => state.Order)
+                                    .HasForeignKey<OrderState>(state => state.OrderId)
+                                    .OnDelete(DeleteBehavior.Cascade);
     }
 
     public DbSet<User> Users { get; set; }
@@ -47,4 +55,24 @@ public class DataContext : DbContext
     public DbSet<OrderState> OrderStates { get; set; }
 
     public DbSet<Referal> Referals { get; set; }
+
+    protected override IEnumerable<ISagaClassMap> Configurations => new List<ISagaClassMap>() { new UserStateMap(), new OrderStateMap() };
+}
+
+internal class UserStateMap : SagaClassMap<UserState>
+{
+    protected override void Configure(EntityTypeBuilder<UserState> entity, ModelBuilder model)
+    {
+        base.Configure(entity, model);
+        entity.Property(state => state.RowVersion).IsRowVersion();
+    }
+}
+
+internal class OrderStateMap : SagaClassMap<OrderState>
+{   
+    protected override void Configure(EntityTypeBuilder<OrderState> entity, ModelBuilder model)
+    {
+        base.Configure(entity, model);
+        entity.Property(state => state.RowVersion).IsRowVersion();
+    }
 }
